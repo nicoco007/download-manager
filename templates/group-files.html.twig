@@ -1,0 +1,20 @@
+{% include 'header.html.twig' %}
+
+{% if files|length > 0 %}
+<table class="table">
+    <thead>
+    <th>File Name</th>
+    </thead>
+    <tbody>
+    {% for file in files %}
+    <tr>
+        <td><a href="{{ path('download', {'groupSlug': group.getSlug(), 'fileName': file.getName()}) }}">{{ file.getName() }}</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="lead">Nothing found.</p>
+{% endif %}
+
+{% include 'footer.html.twig' %}

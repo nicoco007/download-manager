@@ -1,0 +1,36 @@
+{% include 'header.html.twig' %}
+
+<div class="row">
+    <div class="col-12">
+        <h1>Files</h1>
+        <p><a class="btn btn-primary" href="{{ path('add_file') }}">Upload</a></p>
+        {% if files|length > 0 %}
+        <table class="table">
+            <thead>
+            <th>File Name</th>
+            <th>Group Name</th>
+            <th>Uploaded on</th>
+            <th>Downloads</th>
+            <th></th>
+            <th></th>
+            </thead>
+            <tbody>
+            {% for file in files %}
+            <tr>
+                <td>{{ file.getName() }}</td>
+                <td>{{ file.getGroup().getName() }}</td>
+                <td>{{ file.getUploadTime().format('Y-m-d H:i:s') }}</td>
+                <td>{{ file.getDownloads().count() }}</td>
+                <td><a class="btn btn-light" href="{{ path('download', {'groupSlug': file.getGroup().getSlug(), 'fileName': file.getName()}) }}">Download Link</a></td>
+                <td><a class="btn btn-light" href="{{ path('edit_file', {'id': file.id}) }}">Edit</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="lead">Nothing found.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% include 'footer.html.twig' %}
