@@ -6,8 +6,8 @@ namespace App\Controller;
 
 use App\Entity\Download;
 use App\Entity\DownloadableFile;
-use App\Entity\FileGroup;
-use App\Service\FileUploader;
+use App\Entity\Folder;
+use App\Service\FileManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -24,39 +24,32 @@ class PublicController extends AbstractController
     }
 
     /**
-     * @Route("/downloads/{groupSlug}/", name="group_files")
+     * @Route("/download/{path}", name="download", requirements={"path"=".+"})
      *
-     * @param string $groupSlug
-     * @return Response
-     */
-    public function listGroupFiles(string $groupSlug)
-    {
-        /** @var FileGroup $group */
-        $group = $this->getDoctrine()->getRepository(FileGroup::class)->findOneBy(['slug' => $groupSlug]);
-
-        if ($group === null)
-            throw new NotFoundHttpException();
-
-        return $this->render('group-files.html.twig', ['group' => $group, 'files' => $group->getFiles()]);
-    }
-
-    /**
-     * @Route("/downloads/{groupSlug}/{fileName}", name="download")
-     *
-     * @param FileUploader $fileUploader
-     * @param string $groupSlug
-     * @param string $fileName
+     * @param FileManager $fileUploader
+     * @param string $path
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
-    public function download(FileUploader $fileUploader, string $groupSlug, string $fileName)
+    public function download(FileManager $fileUploader, string $path)
     {
         $doctrine = $this->getDoctrine();
+        $parts = explode('/', $path);
+        $partsCount = count($parts);
 
-        /** @var FileGroup $group */
-        $group = $doctrine->getRepository(FileGroup::class)->findOneBy(['slug' => $groupSlug]);
+        /** @var Folder $folder */
+        $folder = null;
 
         /** @var DownloadableFile $file */
-        $file = $doctrine->getRepository(DownloadableFile::class)->findOneBy(['name' => $fileName, 'group' => $group]);
+        $file = null;
+
+        for ($i = 0; $i < $partsCount - 1; $i++) {
+            $folder = $doctrine->getRepository(Folder::class)->findOneBy(['name' => $parts[$i]]);
+
+            if ($folder === null)
+                throw new NotFoundHttpException();
+        }
+
+        $file = $doctrine->getRepository(DownloadableFile::class)->findOneBy(['name' => $parts[$partsCount - 1], 'folder' => $folder]);
 
         if ($file === null)
             throw new NotFoundHttpException();
@@ -70,6 +63,6 @@ class PublicController extends AbstractController
         $manager->persist($download);
         $manager->flush();
 
-        return $this->file($fileUploader->getTargetDirectory() . '/' . $file->getPath(), $file->getName());
+        return $this->file($fileUploader->path($file), $file->getName());
     }
 }

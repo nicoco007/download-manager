@@ -5,17 +5,17 @@ namespace App\Controller;
 
 
 use App\Entity\DownloadableFile;
-use App\Entity\FileGroup;
-use App\Service\FileUploader;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use App\Entity\Folder;
+use App\Service\FileManager;
+
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
@@ -43,189 +43,243 @@ class AdminController extends AbstractController
      */
     public function index()
     {
-        /*$entityManager = $this->getDoctrine()->getManager();
-
-        $download = new Download();
-        $download->setFileName("something.zip");
-        $download->setTime(new \DateTime());
-
-        $entityManager->persist($download);
-
-        $entityManager->flush();*/
-
         return $this->render('admin/index.html.twig');
     }
 
     /**
-     * @Route("/admin/files/", name="files")
+     * @Route("/admin/files/{path}", name="files", requirements={"path"=".+"}, defaults={"path"=""})
+     * @param $path
+     * @return Response
      */
-    public function files()
+    public function files($path)
     {
-        $repository = $this->getDoctrine()->getRepository(DownloadableFile::class);
-        $files = $repository->findAll();
+        $folder = null;
+        $folderPath = '';
+        $currentFolderId = null;
 
-        return $this->render('admin/files.html.twig', ['files' => $files]);
+        if ($path !== '') {
+            $folder = $this->getFolderFromPath($path);
+
+            if ($folder === null)
+                throw new NotFoundHttpException();
+
+            $folderPath = $folder->getPath() . '/';
+            $currentFolderId = $folder->getId();
+            $folders = $folder->getFolders();
+            $files = $folder->getFiles();
+        } else {
+            $doctrine = $this->getDoctrine();
+
+            $folders = $doctrine->getRepository(Folder::class)->findBy(['parent' => null]);
+            $files = $doctrine->getRepository(DownloadableFile::class)->findBy(['folder' => null]);
+        }
+
+        $folderHierarchy = [];
+        $current = $folder;
+
+        while ($current !== null) {
+            $folderHierarchy[] = $current;
+            $current = $current->getParent();
+        }
+
+        $folderHierarchy = array_reverse($folderHierarchy);
+
+        return $this->render('admin/files.html.twig', [
+            'files' => $files,
+            'folders' => $folders,
+            'currentFolder' => $folder,
+            'folderPath' => $folderPath,
+            'folderHierarchy' => $folderHierarchy,
+            'currentFolderId' => $currentFolderId
+        ]);
+    }
+
+    private function getFolderFromPath(string $path): ?Folder
+    {
+        $parts = explode('/', $path);
+        $folder = null;
+        $repository = $this->getDoctrine()->getRepository(Folder::class);
+
+        foreach ($parts as $part) {
+            /** @var Folder $folder */
+            $folder = $repository->findOneBy(['parent' => $folder, 'name' => $part]);
+
+            if ($folder === null)
+                return null;
+        }
+
+        return $folder;
     }
 
     /**
-     * @Route("/admin/files/new/", name="add_file")
+     * @Route("/admin/upload/{parentId}", name="add_file", defaults={"parentId"=null})
      *
      * @param Request $request
-     * @param FileUploader $fileUploader
+     * @param FileManager $fileUploader
+     * @param $parentId
      * @return Response
      */
-    public function newFile(Request $request, FileUploader $fileUploader)
+    public function newFile(Request $request, FileManager $fileUploader, $parentId)
     {
         $file = new DownloadableFile();
 
         $form = $this->createFormBuilder($file)
-            ->add('group', EntityType::class, ['class' => FileGroup::class, 'choice_label' => 'name', 'required' => true])
-            ->add('path', FileType::class, ['label' => 'File', 'required' => true])
+            ->add('local_path', FileType::class, ['label' => 'File', 'required' => true])
             ->add('save', SubmitType::class, ['label' => 'Upload File'])
             ->getForm();
 
         $form->handleRequest($request);
 
-        if ($form->isSubmitted()) {
-            if ($file->getGroup() === null)
-                $form->addError(new FormError('You must select a group.'));
+        if ($form->isSubmitted() && $form->isValid()) {
+            $doctrine = $this->getDoctrine();
 
-            if ($form->isValid()) {
-                /** @var UploadedFile $path */
-                $path = $form->get('path')->getData();
+            $file->setFolder($doctrine->getRepository(Folder::class)->findOneBy(['id' => $parentId]));
 
-                $file->setName($path->getClientOriginalName());
-                $file->setPath($fileUploader->upload($path));
-                $file->setUploadTime(new \DateTime());
+            /** @var UploadedFile $path */
+            $path = $form->get('local_path')->getData();
 
-                $entityManager = $this->getDoctrine()->getManager();
-                $entityManager->persist($file);
-                $entityManager->flush();
+            $file->setName($path->getClientOriginalName());
+            $file->setLocalPath($fileUploader->upload($path));
+            $file->setUploadTime(new \DateTime());
 
-                return $this->redirectToRoute('files');
-            }
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($file);
+            $entityManager->flush();
+
+            return $this->redirectToRoute('files', ['path' => $file->getFolderPath()]);
         }
 
         return $this->render('admin/files/new.html.twig', ['form' => $form->createView()]);
     }
 
     /**
-     * @Route("/admin/files/edit/{id}", name="edit_file")
+     * @Route("/admin/edit/{id}", name="edit_file")
      * @param Request $request
      * @param int $id
      * @return Response
      */
     public function editFile(Request $request, int $id)
     {
-        $repo = $this->getDoctrine()->getRepository(DownloadableFile::class);
+        $doctrine = $this->getDoctrine();
+        $repo = $doctrine->getRepository(DownloadableFile::class);
         $file = $repo->findOneBy(['id' => $id]);
 
         $form = $this->createFormBuilder($file)
             ->add('name', TextType::class, ['required' => true])
-            ->add('group', EntityType::class, ['class' => FileGroup::class, 'choice_label' => 'name', 'required' => true])
-            ->add('save', SubmitType::class, ['label' => 'Save File'])
-            ->add('delete', SubmitType::class, ['label' => 'Delete'])
+            ->add('save', SubmitType::class, ['label' => 'Save Changes'])
             ->getForm();
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $this->getDoctrine()->getManager();
-
-            if ($form->get('delete')->isClicked()) {
-                $entityManager->remove($file);
-            } else {
-                $entityManager->persist($file);
-            }
-
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($file);
             $entityManager->flush();
 
-            return $this->redirectToRoute('files');
+            return $this->redirectToRoute('files', ['path' => $file->getFolder() !== null ? $file->getFolder()->getPath() : '']);
         }
 
         return $this->render('admin/files/edit.html.twig', ['form' => $form->createView()]);
     }
 
     /**
-     * @Route("/admin/groups/", name="groups")
+     * @Route("/admin/delete/{id}", name="delete_file")
+     * @param FileManager $fileManager
+     * @param $id
+     * @return Response
      */
-    public function groups()
+    public function deleteFile(FileManager $fileManager, $id)
     {
-        $repo = $this->getDoctrine()->getRepository(FileGroup::class);
-        $groups = $repo->findAll();
+        $doctrine = $this->getDoctrine();
+        $file = $doctrine->getRepository(DownloadableFile::class)->findOneBy(['id' => $id]);
+        $filePath = $file->getFolder() !== null ? $file->getFolder()->getPath() : '';
 
-        return $this->render('admin/groups.html.twig', ['groups' => $groups]);
+        $manager = $doctrine->getManager();
+        $manager->remove($file);
+        $manager->flush();
+
+        return $this->redirectToRoute('files', ['path' => $filePath]);
     }
 
     /**
-     * @Route("/admin/groups/new/", name="add_group")
+     * @Route("/admin/folders/new/{parentId}", name="add_folder", defaults={"parentId"=null})
      *
      * @param Request $request
+     * @param int $parentId
      * @return Response
      */
-    public function newGroup(Request $request)
+    public function newFolder(Request $request, ?int $parentId)
     {
-        $group = new FileGroup();
+        $folder = new Folder();
 
-        $form = $this->createFormBuilder($group)
+        $form = $this->createFormBuilder($folder)
             ->add('name', TextType::class, ['required' => true])
-            ->add('slug', TextType::class)
-            ->add('save', SubmitType::class, ['label' => 'Add Group'])
+            ->add('save', SubmitType::class, ['label' => 'Add Folder'])
             ->getForm();
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if ($group->getSlug() === null || $group->getSlug() === "")
-                $group->setSlug($group->getName()); // TODO: strip non-ascii and replace spaces with dashes?
+            $doctrine = $this->getDoctrine();
 
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($group);
+            $folder->setParent($doctrine->getRepository(Folder::class)->findOneBy(['id' => $parentId]));
+
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($folder);
             $entityManager->flush();
 
-            return $this->redirectToRoute('groups');
+            return $this->redirectToRoute('files', ['path' => $folder->getPath()]);
         }
 
         return $this->render('admin/groups/new.html.twig', ['form' => $form->createView()]);
     }
 
     /**
-     * @Route("/admin/groups/edit/{id}", name="edit_group")
+     * @Route("/admin/folders/edit/{id}", name="edit_folder")
      *
      * @param Request $request
      * @param int $id
      * @return Response
      */
-    public function editGroup(Request $request, int $id)
+    public function editFolder(Request $request, int $id)
     {
-        $repo = $this->getDoctrine()->getRepository(FileGroup::class);
-        $group = $repo->findOneBy(['id' => $id]);
+        $doctrine = $this->getDoctrine();
+        $repo = $doctrine->getRepository(Folder::class);
+        $folder = $repo->findOneBy(['id' => $id]);
 
-        $form = $this->createFormBuilder($group)
+        $form = $this->createFormBuilder($folder)
             ->add('name', TextType::class, ['required' => true])
-            ->add('slug', TextType::class)
-            ->add('save', SubmitType::class, ['label' => 'Save Group'])
-            ->add('delete', SubmitType::class, ['label' => 'Delete'])
+            ->add('save', SubmitType::class, ['label' => 'Save Changes'])
             ->getForm();
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if ($group->getSlug() === null || $group->getSlug() === "")
-                $group->setSlug($group->getName()); // TODO: strip non-ascii and replace spaces with dashes?
-
-            $entityManager = $this->getDoctrine()->getManager();
-
-            if ($form->get('delete')->isClicked())
-                $entityManager->remove($group);
-            else
-                $entityManager->persist($group);
-
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($folder);
             $entityManager->flush();
 
-            return $this->redirectToRoute('groups');
+            return $this->redirectToRoute('files');
         }
 
         return $this->render('admin/groups/new.html.twig', ['form' => $form->createView()]);
+    }
+
+    /**
+     * @Route("/folders/delete/{id}", name="delete_folder")
+     * @param $id
+     * @return Response
+     */
+    public function deleteFolder($id)
+    {
+        $doctrine = $this->getDoctrine();
+        $folder = $doctrine->getRepository(Folder::class)->findOneBy(['id' => $id]);
+        $folderPath = $folder->getParent() !== null ? $folder->getParent()->getPath() : '';
+
+        $manager = $doctrine->getManager();
+        $manager->remove($folder);
+        $manager->flush();
+
+        return $this->redirectToRoute('files', ['path' => $folderPath]);
     }
 }

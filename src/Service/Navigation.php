@@ -32,7 +32,6 @@ class Navigation
         $this->pages = [
             'admin_home' => 'Home',
             'files' => 'Files',
-            'groups' => 'Groups',
             'logout' => 'Sign out'
         ];
     }
