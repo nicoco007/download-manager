@@ -184,11 +184,10 @@ class AdminController extends AbstractController
 
     /**
      * @Route("/admin/delete/{id}", name="delete_file")
-     * @param FileManager $fileManager
      * @param $id
      * @return Response
      */
-    public function deleteFile(FileManager $fileManager, $id)
+    public function deleteFile($id)
     {
         $doctrine = $this->getDoctrine();
         $file = $doctrine->getRepository(DownloadableFile::class)->findOneBy(['id' => $id]);

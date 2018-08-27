@@ -4,7 +4,6 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\PersistentCollection;
-use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\FileRepository")
