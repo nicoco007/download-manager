@@ -6,7 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Download;
 use App\Entity\DownloadableFile;
-use App\Entity\Folder;
+use App\Entity\Project;
 use App\Service\FileManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,36 +20,26 @@ class PublicController extends AbstractController
      */
     public function index()
     {
-        return new Response('nope');
+        return $this->render('index.html.twig');
     }
 
     /**
-     * @Route("/download/{path}", name="download", requirements={"path"=".+"})
+     * @Route("/download/{projectSlug}/{fileName}", name="download", requirements={"path"=".+"})
      *
      * @param FileManager $fileUploader
-     * @param string $path
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @param string $projectSlug
+     * @param string $fileName
+     * @return Response
      */
-    public function download(FileManager $fileUploader, string $path)
+    public function download(FileManager $fileUploader, string $projectSlug, string $fileName)
     {
         $doctrine = $this->getDoctrine();
-        $parts = explode('/', $path);
-        $partsCount = count($parts);
 
-        /** @var Folder $folder */
-        $folder = null;
+        /** @var Project $project */
+        $project = $doctrine->getRepository(Project::class)->findOneBy(['slug' => $projectSlug]);
 
         /** @var DownloadableFile $file */
-        $file = null;
-
-        for ($i = 0; $i < $partsCount - 1; $i++) {
-            $folder = $doctrine->getRepository(Folder::class)->findOneBy(['name' => $parts[$i]]);
-
-            if ($folder === null)
-                throw new NotFoundHttpException();
-        }
-
-        $file = $doctrine->getRepository(DownloadableFile::class)->findOneBy(['name' => $parts[$partsCount - 1], 'folder' => $folder]);
+        $file = $doctrine->getRepository(DownloadableFile::class)->findOneBy(['project' => $project, 'name' => $fileName]);
 
         if ($file === null)
             throw new NotFoundHttpException();

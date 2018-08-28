@@ -1,0 +1,31 @@
+{% include 'header.html.twig' %}
+
+<div class="row">
+    <div class="col-12">
+        <h1>Projects</h1>
+        <p><a class="btn btn-primary" href="{{ path('add_project') }}"><i class="fa fa-plus"></i> Add Project</a></p>
+        {% if projects|length > 0 %}
+        <table class="table">
+            <thead>
+            <th>Project Name</th>
+            <th></th>
+            </thead>
+            <tbody>
+            {% for project in projects %}
+                <tr>
+                    <td><a href="{{ path('files', {'slug': project.getSlug()}) }}">{{ project.getName() }}</a></td>
+                    <td>
+                        <a class="btn btn-light" href="{{ path('edit_project', {'id': project.getId()}) }}"><i class="fa fa-edit"></i></a>
+                        <a class="btn btn-danger" href="{{ path('delete_project', {'id': project.getId()}) }}"><i class="fa fa-trash-alt"</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="lead">Nothing found.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% include 'footer.html.twig' %}

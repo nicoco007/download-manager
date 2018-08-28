@@ -3,38 +3,13 @@
 <div class="row">
     <div class="col-12">
         <h1>Files</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                {% if currentFolder == null %}
-                    <li class="breadcrumb-item active" aria-current="page">Files</li>
-                {% else %}
-                    <li class="breadcrumb-item" aria-current="page"><a href="{{ path('files') }}">Files</a></li>
-                {% endif %}
-
-                {% for folder in folderHierarchy %}
-                    {% if currentFolder == folder %}
-                        <li class="breadcrumb-item active" aria-current="page">{{ currentFolder.getName() }}</li>
-                    {% else %}
-                        <li class="breadcrumb-item"><a href="{{ path('files', {'path': folder.getPath()}) }}">{{ folder.getName() }}</a></li>
-                    {% endif %}
-                {% endfor %}
-            </ol>
-        </nav>
+        <p class="lead">{{ project.getName() }}</p>
 
         <p>
-            {% if currentFolder != null %}
-                {% if currentFolder.getParent() != null %}
-                    <a class="btn btn-light" href="{{ path('files', {'path': currentFolder.getParent().getPath()}) }}"><i class="fa fa-arrow-circle-left"></i> Back</a>
-                {% else %}
-                    <a class="btn btn-light" href="{{ path('files') }}"><i class="fa fa-arrow-circle-left"></i> Back</a>
-                {% endif %}
-            {% endif %}
-
-            <a class="btn btn-primary" href="{{ path('add_file', {'parentId': currentFolderId}) }}"><i class="fa fa-upload"></i> Upload</a>
-            <a class="btn btn-primary" href="{{ path('add_folder', {'parentId': currentFolderId}) }}"><i class="fa fa-plus"></i> New Folder</a>
+            <a class="btn btn-primary" href="{{ path('upload', {'slug': project.getSlug()}) }}"><i class="fa fa-upload"></i> Upload</a>
         </p>
 
-        {% if files|length > 0 or folders|length > 0 %}
+        {% if files|length > 0 %}
         <table class="table">
             <thead>
             <tr>
@@ -45,26 +20,14 @@
             </tr>
             </thead>
             <tbody>
-            {% for folder in folders %}
-                <tr>
-                    <td><a href="{{ path('files', {'path': folderPath ~ folder.getName()}) }}">{{ folder.getName() }}</a></td>
-                    <td></td>
-                    <td></td>
-                    <td>
-                        <a class="btn btn-light" href="{{ path('edit_folder', {'id': folder.getId()}) }}"><i class="fa fa-edit"></i></a>
-                        <a class="btn btn-danger" href="{{ path('delete_folder', {'id': folder.getId()}) }}"><i class="fa fa-trash-alt"></i></a>
-                    </td>
-                </tr>
-            {% endfor %}
-
             {% for file in files %}
                 <tr>
-                    <td><a href="{{ path('download', {'path': file.getPath()}) }}">{{ file.getName() }}</a></td>
+                    <td><a href="{{ path('download', {'projectSlug': project.getSlug(), 'fileName': file.getName()}) }}">{{ file.getName() }}</a></td>
                     <td>{{ file.getUploadTime().format('Y-m-d H:i:s') }}</td>
                     <td>{{ file.getDownloads().count() }}</td>
                     <td>
-                        <a class="btn btn-light" href="{{ path('edit_file', {'id': file.id}) }}"><i class="fa fa-edit"></i></a>
-                        <a class="btn btn-danger" href="{{ path('delete_file', {'id': file.getId()}) }}"><i class="fa fa-trash-alt"></i></a>
+                        <a class="btn btn-light" href="{{ path('edit_file', {'projectSlug': project.getSlug(), 'fileName': file.getName()}) }}"><i class="fa fa-edit"></i></a>
+                        <a class="btn btn-danger" href="{{ path('delete_file', {'projectSlug': project.getSlug(), 'fileName': file.getName()}) }}"><i class="fa fa-trash-alt"></i></a>
                     </td>
                 </tr>
             {% endfor %}

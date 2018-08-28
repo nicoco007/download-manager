@@ -7,7 +7,7 @@ use Doctrine\ORM\PersistentCollection;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\FileRepository")
- * @ORM\Table(name="downloadable_file",uniqueConstraints={@ORM\UniqueConstraint(name="unique_file_in_folder", columns={"name", "folder_id"})})
+ * @ORM\Table(name="downloadable_file", uniqueConstraints={@ORM\UniqueConstraint(name="unique_file_in_project", columns={"name", "project_id"})})
  */
 class DownloadableFile
 {
@@ -32,11 +32,11 @@ class DownloadableFile
     private $local_path;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Folder", inversedBy="files")
-     * @ORM\JoinColumn(name="folder_id", referencedColumnName="id")
-     * @var Folder
+     * @ORM\ManyToOne(targetEntity="App\Entity\Project", inversedBy="files")
+     * @ORM\JoinColumn(name="project_id", referencedColumnName="id", nullable=false)
+     * @var Project
      */
-    private $folder;
+    private $project;
 
     /**
      * @ORM\Column(type="datetime")
@@ -105,40 +105,18 @@ class DownloadableFile
     }
 
     /**
-     * @return mixed
+     * @return Project
      */
-    public function getFolder(): ?Folder
+    public function getProject(): Project
     {
-        return $this->folder;
+        return $this->project;
     }
 
     /**
-     * @param mixed $folder
+     * @param Project $project
      */
-    public function setFolder($folder): void
+    public function setProject(Project $project): void
     {
-        $this->folder = $folder;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPath(): string
-    {
-        if ($this->folder !== null)
-            return $this->folder->getPath() . '/' . $this->getName();
-        else
-            return $this->getName();
-    }
-
-    /**
-     * @return string
-     */
-    public function getFolderPath(): string
-    {
-        if ($this->folder !== null)
-            return $this->folder->getPath();
-        else
-            return '';
+        $this->project = $project;
     }
 }

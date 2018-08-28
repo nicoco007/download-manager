@@ -5,7 +5,7 @@ namespace App\Controller;
 
 
 use App\Entity\DownloadableFile;
-use App\Entity\Folder;
+use App\Entity\Project;
 use App\Service\FileManager;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -47,80 +47,130 @@ class AdminController extends AbstractController
     }
 
     /**
-     * @Route("/admin/files/{path}", name="files", requirements={"path"=".+"}, defaults={"path"=""})
-     * @param $path
-     * @return Response
+     * @Route("/admin/projects/", name="projects")
      */
-    public function files($path)
+    public function projects()
     {
-        $folder = null;
-        $folderPath = '';
-        $currentFolderId = null;
+        $projects = $this->getDoctrine()->getRepository(Project::class)->findAll();
 
-        if ($path !== '') {
-            $folder = $this->getFolderFromPath($path);
-
-            if ($folder === null)
-                throw new NotFoundHttpException();
-
-            $folderPath = $folder->getPath() . '/';
-            $currentFolderId = $folder->getId();
-            $folders = $folder->getFolders();
-            $files = $folder->getFiles();
-        } else {
-            $doctrine = $this->getDoctrine();
-
-            $folders = $doctrine->getRepository(Folder::class)->findBy(['parent' => null]);
-            $files = $doctrine->getRepository(DownloadableFile::class)->findBy(['folder' => null]);
-        }
-
-        $folderHierarchy = [];
-        $current = $folder;
-
-        while ($current !== null) {
-            $folderHierarchy[] = $current;
-            $current = $current->getParent();
-        }
-
-        $folderHierarchy = array_reverse($folderHierarchy);
-
-        return $this->render('admin/files.html.twig', [
-            'files' => $files,
-            'folders' => $folders,
-            'currentFolder' => $folder,
-            'folderPath' => $folderPath,
-            'folderHierarchy' => $folderHierarchy,
-            'currentFolderId' => $currentFolderId
-        ]);
-    }
-
-    private function getFolderFromPath(string $path): ?Folder
-    {
-        $parts = explode('/', $path);
-        $folder = null;
-        $repository = $this->getDoctrine()->getRepository(Folder::class);
-
-        foreach ($parts as $part) {
-            /** @var Folder $folder */
-            $folder = $repository->findOneBy(['parent' => $folder, 'name' => $part]);
-
-            if ($folder === null)
-                return null;
-        }
-
-        return $folder;
+        return $this->render('admin/projects.html.twig', ['projects' => $projects]);
     }
 
     /**
-     * @Route("/admin/upload/{parentId}", name="add_file", defaults={"parentId"=null})
-     *
+     * @Route("/admin/projects/new/", name="add_project")
      * @param Request $request
-     * @param FileManager $fileUploader
-     * @param $parentId
      * @return Response
      */
-    public function newFile(Request $request, FileManager $fileUploader, $parentId)
+    public function addProject(Request $request)
     {
+        $project = new Project();
+
+        $form = $this->createFormBuilder($project)
+            ->add('name', TextType::class, ['required' => true])
+            ->add('slug', TextType::class, ['required' => true])
+            ->add('save', SubmitType::class, ['label' => 'Add'])
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $doctrine = $this->getDoctrine();
+
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($project);
+            $entityManager->flush();
+
+            return $this->redirectToRoute('projects');
+        }
+
+        return $this->render('admin/projects/new.html.twig', ['form' => $form->createView()]);
+    }
+
+    /**
+     * @Route("/admin/projects/edit/{id}", name="edit_project")
+     * @param Request $request
+     * @param int $id
+     * @return Response
+     */
+    public function editProject(Request $request, $id)
+    {
+        $project = $this->getDoctrine()->getRepository(Project::class)->findOneBy(['id' => $id]);
+
+        if ($project === null)
+            throw new NotFoundHttpException();
+
+        $form = $this->createFormBuilder($project)
+            ->add('name', TextType::class, ['required' => true])
+            ->add('slug', TextType::class, ['required' => true])
+            ->add('save', SubmitType::class, ['label' => 'Save'])
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $doctrine = $this->getDoctrine();
+
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($project);
+            $entityManager->flush();
+
+            return $this->redirectToRoute('projects');
+        }
+
+        return $this->render('admin/projects/edit.html.twig', ['form' => $form->createView()]);
+    }
+
+    /**
+     * @Route("/admin/projects/delete/{id}", name="delete_project")
+     * @param int $id
+     * @return Response
+     */
+    public function deleteProject($id)
+    {
+        $doctrine = $this->getDoctrine();
+
+        $project = $doctrine->getRepository(Project::class)->findOneBy(['id' => $id]);
+
+        $manager = $doctrine->getManager();
+        $manager->remove($project);
+        $manager->flush();
+
+        return $this->redirectToRoute('projects');
+    }
+
+    /**
+     * @Route("/admin/projects/project/{slug}/", name="files")
+     * @param $slug
+     * @return Response
+     */
+    public function files($slug)
+    {
+        $doctrine = $this->getDoctrine();
+        $project = $doctrine->getRepository(Project::class)->findOneBy(['slug' => $slug]);
+
+        return $this->render('admin/files.html.twig', [
+            'files' => $project->getFiles(),
+            'project' => $project
+        ]);
+    }
+
+    /**
+     * @Route("/admin/projects/project/{slug}/upload/", name="upload")
+     * @param Request $request
+     * @param FileManager $fileManager
+     * @param string $slug
+     * @return Response
+     */
+    public function upload(Request $request, FileManager $fileManager, $slug)
+    {
+        $doctrine = $this->getDoctrine();
+
+        /** @var Project $project */
+        $project = $doctrine->getRepository(Project::class)->findOneBy(['slug' => $slug]);
+
+        if ($project === null)
+            throw new NotFoundHttpException();
+
         $file = new DownloadableFile();
 
         $form = $this->createFormBuilder($file)
@@ -131,38 +181,40 @@ class AdminController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $doctrine = $this->getDoctrine();
 
-            $file->setFolder($doctrine->getRepository(Folder::class)->findOneBy(['id' => $parentId]));
+            $file->setProject($project);
 
             /** @var UploadedFile $path */
             $path = $form->get('local_path')->getData();
 
             $file->setName($path->getClientOriginalName());
-            $file->setLocalPath($fileUploader->upload($path));
+            $file->setLocalPath($fileManager->upload($path));
             $file->setUploadTime(new \DateTime());
 
             $entityManager = $doctrine->getManager();
             $entityManager->persist($file);
             $entityManager->flush();
 
-            return $this->redirectToRoute('files', ['path' => $file->getFolderPath()]);
+            return $this->redirectToRoute('files', ['slug' => $project->getSlug()]);
         }
 
         return $this->render('admin/files/new.html.twig', ['form' => $form->createView()]);
     }
 
     /**
-     * @Route("/admin/edit/{id}", name="edit_file")
+     * @Route("/admin/projects/project/{projectSlug}/files/{fileName}/edit", name="edit_file")
      * @param Request $request
-     * @param int $id
+     * @param string $projectSlug
+     * @param string $fileName
      * @return Response
      */
-    public function editFile(Request $request, int $id)
+    public function editFile(Request $request, string $projectSlug, string $fileName)
     {
         $doctrine = $this->getDoctrine();
         $repo = $doctrine->getRepository(DownloadableFile::class);
-        $file = $repo->findOneBy(['id' => $id]);
+
+        $project = $doctrine->getRepository(Project::class)->findOneBy(['slug' => $projectSlug]);
+        $file = $repo->findOneBy(['name' => $fileName, 'project' => $project]);
 
         $form = $this->createFormBuilder($file)
             ->add('name', TextType::class, ['required' => true])
@@ -176,109 +228,28 @@ class AdminController extends AbstractController
             $entityManager->persist($file);
             $entityManager->flush();
 
-            return $this->redirectToRoute('files', ['path' => $file->getFolder() !== null ? $file->getFolder()->getPath() : '']);
+            return $this->redirectToRoute('files', ['slug' => $file->getProject()->getSlug()]);
         }
 
         return $this->render('admin/files/edit.html.twig', ['form' => $form->createView()]);
     }
 
     /**
-     * @Route("/admin/delete/{id}", name="delete_file")
-     * @param $id
+     * @Route("/admin/projects/project/{projectSlug}/files/{fileName}/delete", name="delete_file")
+     * @param string $projectSlug
+     * @param string $fileName
      * @return Response
      */
-    public function deleteFile($id)
+    public function deleteFile(string $projectSlug, string $fileName)
     {
         $doctrine = $this->getDoctrine();
-        $file = $doctrine->getRepository(DownloadableFile::class)->findOneBy(['id' => $id]);
-        $filePath = $file->getFolder() !== null ? $file->getFolder()->getPath() : '';
+        $project = $doctrine->getRepository(Project::class)->findOneBy(['slug' => $projectSlug]);
+        $file = $doctrine->getRepository(DownloadableFile::class)->findOneBy(['name' => $fileName, 'project' => $project]);
 
         $manager = $doctrine->getManager();
         $manager->remove($file);
         $manager->flush();
 
-        return $this->redirectToRoute('files', ['path' => $filePath]);
-    }
-
-    /**
-     * @Route("/admin/folders/new/{parentId}", name="add_folder", defaults={"parentId"=null})
-     *
-     * @param Request $request
-     * @param int $parentId
-     * @return Response
-     */
-    public function newFolder(Request $request, ?int $parentId)
-    {
-        $folder = new Folder();
-
-        $form = $this->createFormBuilder($folder)
-            ->add('name', TextType::class, ['required' => true])
-            ->add('save', SubmitType::class, ['label' => 'Add Folder'])
-            ->getForm();
-
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $doctrine = $this->getDoctrine();
-
-            $folder->setParent($doctrine->getRepository(Folder::class)->findOneBy(['id' => $parentId]));
-
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($folder);
-            $entityManager->flush();
-
-            return $this->redirectToRoute('files', ['path' => $folder->getPath()]);
-        }
-
-        return $this->render('admin/groups/new.html.twig', ['form' => $form->createView()]);
-    }
-
-    /**
-     * @Route("/admin/folders/edit/{id}", name="edit_folder")
-     *
-     * @param Request $request
-     * @param int $id
-     * @return Response
-     */
-    public function editFolder(Request $request, int $id)
-    {
-        $doctrine = $this->getDoctrine();
-        $repo = $doctrine->getRepository(Folder::class);
-        $folder = $repo->findOneBy(['id' => $id]);
-
-        $form = $this->createFormBuilder($folder)
-            ->add('name', TextType::class, ['required' => true])
-            ->add('save', SubmitType::class, ['label' => 'Save Changes'])
-            ->getForm();
-
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($folder);
-            $entityManager->flush();
-
-            return $this->redirectToRoute('files');
-        }
-
-        return $this->render('admin/groups/new.html.twig', ['form' => $form->createView()]);
-    }
-
-    /**
-     * @Route("/folders/delete/{id}", name="delete_folder")
-     * @param $id
-     * @return Response
-     */
-    public function deleteFolder($id)
-    {
-        $doctrine = $this->getDoctrine();
-        $folder = $doctrine->getRepository(Folder::class)->findOneBy(['id' => $id]);
-        $folderPath = $folder->getParent() !== null ? $folder->getParent()->getPath() : '';
-
-        $manager = $doctrine->getManager();
-        $manager->remove($folder);
-        $manager->flush();
-
-        return $this->redirectToRoute('files', ['path' => $folderPath]);
+        return $this->redirectToRoute('files', ['slug' => $project->getSlug()]);
     }
 }

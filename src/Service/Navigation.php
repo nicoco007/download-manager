@@ -30,8 +30,8 @@ class Navigation
     function setupAdminPages()
     {
         $this->pages = [
-            'admin_home' => 'Home',
-            'files' => 'Files',
+            'home' => 'Home',
+            'projects' => 'Projects',
             'logout' => 'Sign out'
         ];
     }
