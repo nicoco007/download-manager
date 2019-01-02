@@ -12,9 +12,16 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Core\Security;
 
 class PublicController extends AbstractController
 {
+    private $security;
+
+    public function __construct(Security $security) {
+        $this->security = $security;
+    }
+
     /**
      * @Route("/", name="home")
      */
@@ -44,14 +51,17 @@ class PublicController extends AbstractController
         if ($file === null)
             throw new NotFoundHttpException();
 
-        $manager = $doctrine->getManager();
+        // only count if downloads are from non-logged in user
+        if (!$this->security->isGranted('IS_AUTHENTICATED_REMEMBERED')) {
+            $manager = $doctrine->getManager();
 
-        $download = new Download();
-        $download->setFile($file);
-        $download->setTime(new \DateTime());
+            $download = new Download();
+            $download->setFile($file);
+            $download->setTime(new \DateTime());
 
-        $manager->persist($download);
-        $manager->flush();
+            $manager->persist($download);
+            $manager->flush();
+        }
 
         return $this->file($fileUploader->path($file), $file->getName());
     }
