@@ -4,7 +4,7 @@ security:
             memory:
                 users:
                     admin:
-                        password: $2y$10$T.TfldE4a7hjujikxM4tMuLGaIiiCwiJNh.dSOvD4555FYaDQm742
+                        password: $2y$10$mSkLlWrg8eynmmZNWV6Zwu52.TUyjoMS5hPoHKXBSHwpj3l3rR.xK # currently too lazy to actually make things safe
                         roles: 'ROLE_SUPER_ADMIN'
     encoders:
         Symfony\Component\Security\Core\User\User:
@@ -20,7 +20,7 @@ security:
                 login_path: login
                 check_path: login
                 csrf_token_generator: security.csrf.token_manager
-                default_target_path: home
+                default_target_path: admin_home
             logout:
                 path: /admin/logout/
                 target: /

@@ -4,6 +4,8 @@ namespace App\Repository;
 
 use App\Entity\Download;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\ResultSetMapping;
+use Doctrine\ORM\Query\ResultSetMappingBuilder;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
@@ -17,6 +19,20 @@ class DownloadRepository extends ServiceEntityRepository
     public function __construct(RegistryInterface $registry)
     {
         parent::__construct($registry, Download::class);
+    }
+
+    public function findAfter(int $days) {
+        $entityManager = $this->getEntityManager();
+
+        $rsm = new ResultSetMappingBuilder($entityManager);
+        $rsm->addIndexByScalar('date');
+        $rsm->addScalarResult('date', 'date', 'date');
+        $rsm->addScalarResult('count', 'count', 'integer');
+
+        $query = $entityManager->createNativeQuery('SELECT DATE(time) as date, COUNT(time) as count FROM download WHERE time >= DATE_SUB(CURRENT_DATE(), INTERVAL :days DAY) GROUP BY DATE(time);', $rsm);
+        $query->setParameter('days', $days);
+
+        return $query->getArrayResult();
     }
 
 //    /**

@@ -139,7 +139,7 @@ class AdminController extends AbstractController
     }
 
     /**
-     * @Route("/admin/projects/project/{slug}/", name="files")
+     * @Route("/admin/project/{slug}/", name="files")
      * @param $slug
      * @return Response
      */
@@ -155,7 +155,7 @@ class AdminController extends AbstractController
     }
 
     /**
-     * @Route("/admin/projects/project/{slug}/upload/", name="upload")
+     * @Route("/admin/project/{slug}/upload/", name="upload")
      * @param Request $request
      * @param FileManager $fileManager
      * @param string $slug
@@ -202,7 +202,7 @@ class AdminController extends AbstractController
     }
 
     /**
-     * @Route("/admin/projects/project/{projectSlug}/files/{fileName}/edit", name="edit_file")
+     * @Route("/admin/project/{projectSlug}/file/{fileName}/edit", name="edit_file")
      * @param Request $request
      * @param string $projectSlug
      * @param string $fileName
@@ -235,7 +235,7 @@ class AdminController extends AbstractController
     }
 
     /**
-     * @Route("/admin/projects/project/{projectSlug}/files/{fileName}/delete", name="delete_file")
+     * @Route("/admin/project/{projectSlug}/file/{fileName}/delete", name="delete_file")
      * @param string $projectSlug
      * @param string $fileName
      * @return Response
