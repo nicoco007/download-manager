@@ -2,9 +2,8 @@
 
 <div class="row">
     <div class="col-12">
-        <h1>Files</h1>
-        <p class="lead">{{ project.getName() }}</p>
-
+        <h1>Files <small class="text-muted">{{ project.getName() }}</small></h1>
+        
         <p>
             <a class="btn btn-primary" href="{{ path('upload', {'slug': project.getSlug()}) }}"><i class="fa fa-upload"></i> Upload</a>
         </p>
