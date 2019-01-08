@@ -27,7 +27,7 @@ class FileManager
      */
     public function upload(UploadedFile $file): string
     {
-        $fileName = hash('sha256', uniqid()) . '.' . ($file->guessExtension() ?? $file->getClientOriginalExtension());
+        $fileName = hash('sha256', uniqid()) . '.' . (/*$file->guessExtension() ?? */$file->getClientOriginalExtension());
 
         $file->move($this->getTargetDirectory(), $fileName);
 
