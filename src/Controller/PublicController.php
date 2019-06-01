@@ -27,7 +27,8 @@ class PublicController extends AbstractController
      */
     public function index()
     {
-        return $this->render('index.html.twig');
+        $projects = $this->getDoctrine()->getRepository(Project::class)->findAll();
+        return $this->render('index.html.twig', ['projects' => $projects]);
     }
 
     /**

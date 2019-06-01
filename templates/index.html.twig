@@ -1,8 +1,25 @@
 {% include 'header.html.twig' %}
 
-<div class="text-center">
-    <h1>Nothing to see here</h1>
-    <p>unless you want to <a href="{{ path('login') }}">sign in</a>.</p>
-</div>
+<h1>Projects</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Downloads in the past 24 hours</th>
+            <th>Total Downloads</th>
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for project in projects %}
+        <tr>
+            <td>{{ project.name }}</td>
+            <td>{{ project.getDownloadsInPast24Hours() }}</td>
+            <td>{{ project.getTotalDownloads() }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
 
 {% include 'footer.html.twig' %}

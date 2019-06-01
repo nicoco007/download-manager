@@ -2,8 +2,12 @@
 
 namespace App\Entity;
 
+use DateInterval;
+use DateTime;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\PersistentCollection;
+use Iterator;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\FileGroupRepository")
@@ -72,5 +76,30 @@ class Project
     public function getFiles(): PersistentCollection
     {
         return $this->files;
+    }
+
+    public function getDownloadsInPast24Hours(): int {
+        $sum = 0;
+
+        $criteria = Criteria::create()->where(Criteria::expr()->gt("time", (new DateTime())->sub(new DateInterval("P1D"))));
+
+        foreach ($this->files as $file) {
+            $sum += count($file->getDownloads()->matching($criteria));
+        }
+
+        return $sum;
+    }
+
+    /**
+     * @return int
+     */
+    public function getTotalDownloads(): int {
+        $sum = 0;
+
+        foreach ($this->files as $file) {
+            $sum += count($file->getDownloads());
+        }
+
+        return $sum;
     }
 }

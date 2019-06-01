@@ -22,16 +22,25 @@ class Navigation
     function setupStandardPages()
     {
         $this->pages = [
-            'home' => 'Home'
+            'left' => [
+                'home' => 'Home'
+            ],
+            'right' => [
+                'login' => 'Sign In'
+            ]
         ];
     }
 
     function setupAdminPages()
     {
         $this->pages = [
-            'admin_home' => 'Home',
-            'projects' => 'Projects',
-            'logout' => 'Sign out'
+            'left' => [
+                'admin_home' => 'Home',
+                'projects' => 'Projects'
+            ],
+            'right' => [
+                'logout' => 'Sign Out'
+            ]
         ];
     }
 

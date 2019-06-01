@@ -6,10 +6,15 @@
 
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
-            {% for name, label in navigation.getPages() %}
-            <li class="nav-item">
-                <a class="nav-link{% if app.request.attributes.get('_route') == name %} active{% endif %}" href="{{ path(name) }}">{{ label }}</a>
-            </li>
+            {% for name, label in navigation.getPages().left %}
+                <li class="nav-item">
+                    <a class="nav-link{% if app.request.attributes.get('_route') == name %} active{% endif %}" href="{{ path(name) }}">{{ label }}</a>
+                </li>
+            {% endfor %}
+            {% for name, label in navigation.getPages().right %}
+                <li class="nav-item">
+                    <a class="nav-link{% if app.request.attributes.get('_route') == name %} active{% endif %}" href="{{ path(name) }}">{{ label }}</a>
+                </li>
             {% endfor %}
         </ul>
     </div>
