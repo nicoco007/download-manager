@@ -10,7 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 
-class ChartApi extends AbstractController
+class ChartApiController extends AbstractController
 {
     /**
      * @Route("/api/charts/all", name="chart_all_downloads")
