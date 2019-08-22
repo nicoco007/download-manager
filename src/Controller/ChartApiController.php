@@ -8,6 +8,7 @@ use App\Entity\Download;
 use App\Repository\DownloadRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 class ChartApiController extends AbstractController
@@ -22,40 +23,89 @@ class ChartApiController extends AbstractController
 
         /** @var DownloadRepository $repo */
         $repo = $this->getDoctrine()->getRepository(Download::class);
-
         $days = $repo->findAfter(7);
 
-        $dataset = [
-            'label' => 'Downloads',
-            'data' => []
-        ];
+        $downloads_by_project = [];
 
-        for ($i = 6; $i >= 0; $i--) {
-            $dateStr = (new \DateTime('now', new \DateTimeZone('UTC')))->sub(new \DateInterval('P' . $i . 'D'))->format('Y-m-d');
-
-            $chart['data']['labels'][] = $dateStr;
-
-            if (isset($days[$dateStr]))
-                $dataset['data'][] = $days[$dateStr]['count'];
-            else
-                $dataset['data'][] = 0;
+        foreach ($days as $day) {
+            $downloads_by_project[$day['project_name']][$day['date']->format('Y-m-d')] = $day['count'];
         }
 
-        $chart['data']['datasets'][0] = $dataset;
+        $chart['options']['scales']['xAxes'] = [[
+            'type' => 'time',
+            'time' => [
+                'unit' => 'day'
+            ]
+        ]];
+
+        foreach ($downloads_by_project as $project_name => $days) {
+            $dataset = [
+                'label' => $project_name,
+                'data' => []
+            ];
+
+            for ($i = 6; $i >= 0; $i--) {
+                $dateStr = (new \DateTime('now', new \DateTimeZone('UTC')))->sub(new \DateInterval('P' . $i . 'D'))->format('Y-m-d');
+
+                $dataset['data'][] = [
+                    'x' => $dateStr,
+                    'y' => $days[$dateStr] ?? 0
+                ];
+            }
+
+            $chart['data']['datasets'][] = $dataset;
+        }
 
         return new JsonResponse($chart);
     }
 
     /**
-     * @Route("/api/charts/test")
+     * @Route("/api/charts/project")
      * @return JsonResponse
      * @throws \Exception
      */
-    public function test()
+    public function project(Request $request)
     {
+        $slug = $request->query->get('slug');
+
         /** @var DownloadRepository $repo */
         $repo = $this->getDoctrine()->getRepository(Download::class);
-        return new JsonResponse($repo->findAllAfter(7));
+        $days = $repo->findAfterForProject($slug, 7);
+
+        $downloads_by_file = [];
+
+        foreach ($days as $day) {
+            $downloads_by_file[$day['file_name']][$day['date']->format('Y-m-d')] = $day['count'];
+        }
+
+        $chart = $this->buildLineObject();
+
+        $chart['options']['scales']['xAxes'] = [[
+            'type' => 'time',
+            'time' => [
+                'unit' => 'day'
+            ]
+        ]];
+
+        foreach ($downloads_by_file as $file_name => $days) {
+            $dataset = [
+                'label' => $file_name,
+                'data' => []
+            ];
+
+            for ($i = 6; $i >= 0; $i--) {
+                $dateStr = (new \DateTime('now', new \DateTimeZone('UTC')))->sub(new \DateInterval('P' . $i . 'D'))->format('Y-m-d');
+
+                $dataset['data'][] = [
+                    'x' => $dateStr,
+                    'y' => $days[$dateStr] ?? 0
+                ];
+            }
+
+            $chart['data']['datasets'][] = $dataset;
+        }
+
+        return new JsonResponse($chart);
     }
 
     private function buildLineObject()
@@ -72,14 +122,15 @@ class ChartApiController extends AbstractController
                     'yAxes' => [
                         [
                             'ticks' => [
-                                'beginAtZero' => true
+                                'beginAtZero' => true,
+                                'stepSize' => 1
                             ]
                         ]
                     ]
                 ],
-                'elements' => [
-                    'line' => [
-                        'tension' => 0
+                'plugins' => [
+                    'colorschemes' => [
+                        'scheme' => 'brewer.SetOne9'
                     ]
                 ]
             ]

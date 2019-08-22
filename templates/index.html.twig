@@ -2,19 +2,21 @@
 
 <h1>Projects</h1>
 
+<canvas class="chart" data-url="/api/charts/all"></canvas>
+
 <table class="table">
     <thead>
-        <tr>
-            <th>Name</th>
-            <th>Downloads in the past 24 hours</th>
-            <th>Total Downloads</th>
-        </tr>
+    <tr>
+        <th>Name</th>
+        <th>Downloads in the past 24 hours</th>
+        <th>Total Downloads</th>
+    </tr>
     </thead>
 
     <tbody>
     {% for project in projects %}
         <tr>
-            <td>{{ project.name }}</td>
+            <td><a href="{{ path('project', {'slug': project.slug}) }}">{{ project.name }}</a></td>
             <td>{{ project.getDownloadsInPast24Hours() }}</td>
             <td>{{ project.getTotalDownloads() }}</td>
         </tr>

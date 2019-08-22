@@ -2,6 +2,7 @@ require('../css/app.scss');
 
 const $ = require('jquery');
 const Chart = require('chart.js');
+const colorSchemes = require('chartjs-plugin-colorschemes');
 
 $('.chart').each(function () {
     const $self = $(this);

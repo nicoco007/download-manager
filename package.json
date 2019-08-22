@@ -15,6 +15,7 @@
         "build": "encore production"
     },
     "dependencies": {
+        "chartjs-plugin-colorschemes": "^0.4.0",
         "jquery": "^3.3.1"
     }
 }

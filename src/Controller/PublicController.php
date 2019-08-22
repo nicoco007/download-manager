@@ -32,12 +32,27 @@ class PublicController extends AbstractController
     }
 
     /**
-     * @Route("/download/{projectSlug}/{fileName}", name="download", requirements={"path"=".+"})
+     * @Route("/project/{slug}", name="project")
+     * @param string $slug
+     * @return Response
+     */
+    public function project(string $slug) {
+        $project = $this->getDoctrine()->getRepository(Project::class)->findOneBy(['slug' => $slug]);
+
+        if ($project === null)
+            throw new NotFoundHttpException();
+
+        return $this->render('project.html.twig', ['project' => $project]);
+    }
+
+    /**
+     * @Route("/download/{projectSlug}/{fileName}", name="download")
      *
      * @param FileManager $fileUploader
      * @param string $projectSlug
      * @param string $fileName
      * @return Response
+     * @throws \Exception
      */
     public function download(FileManager $fileUploader, string $projectSlug, string $fileName)
     {

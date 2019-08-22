@@ -25,11 +25,26 @@ class DownloadRepository extends ServiceEntityRepository
         $entityManager = $this->getEntityManager();
 
         $rsm = new ResultSetMappingBuilder($entityManager);
-        $rsm->addIndexByScalar('date');
         $rsm->addScalarResult('date', 'date', 'date');
+        $rsm->addScalarResult('project_name', 'project_name', 'string');
         $rsm->addScalarResult('count', 'count', 'integer');
 
-        $query = $entityManager->createNativeQuery('SELECT DATE(time) as date, COUNT(time) as count FROM download WHERE time >= DATE_SUB(CURRENT_DATE(), INTERVAL :days DAY) GROUP BY DATE(time);', $rsm);
+        $query = $entityManager->createNativeQuery("SELECT DATE(time) AS date, p.name AS project_name, COUNT(time) AS count FROM download AS d LEFT JOIN downloadable_file AS f ON d.file_id = f.id LEFT JOIN project AS p ON f.project_id = p.id WHERE time >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) GROUP BY DATE(time), p.name;", $rsm);
+        $query->setParameter('days', $days);
+
+        return $query->getArrayResult();
+    }
+
+    public function findAfterForProject(string $slug, int $days) {
+        $entityManager = $this->getEntityManager();
+
+        $rsm = new ResultSetMappingBuilder($entityManager);
+        $rsm->addScalarResult('date', 'date', 'date');
+        $rsm->addScalarResult('file_name', 'file_name', 'string');
+        $rsm->addScalarResult('count', 'count', 'integer');
+
+        $query = $entityManager->createNativeQuery("SELECT DATE(d.time) AS date, f.name as file_name, COUNT(time) AS count FROM download AS d LEFT JOIN downloadable_file AS f ON d.file_id = f.id LEFT JOIN project AS p ON f.project_id = p.id WHERE p.slug = :slug AND time >= DATE_SUB(CURRENT_DATE(), INTERVAL :days DAY) GROUP BY DATE(time), f.name;", $rsm);
+        $query->setParameter('slug', $slug);
         $query->setParameter('days', $days);
 
         return $query->getArrayResult();

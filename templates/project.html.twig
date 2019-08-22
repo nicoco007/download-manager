@@ -1,0 +1,7 @@
+{% include 'header.html.twig' %}
+
+<h1>{{ project.name }}</h1>
+
+<canvas class="chart" data-url="/api/charts/project?slug={{ project.slug }}"></canvas>
+
+{% include 'footer.html.twig' %}

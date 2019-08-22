@@ -7,10 +7,9 @@ use DateTime;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\PersistentCollection;
-use Iterator;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repository\FileGroupRepository")
+ * @ORM\Entity(repositoryClass="App\Repository\ProjectRepository")
  */
 class Project
 {
