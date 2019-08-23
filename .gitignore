@@ -15,7 +15,8 @@
 ###< symfony/web-server-bundle ###
 
 .idea/
-/uploads/
+/uploads/*
+!/uploads/.gitkeep
 
 ###> symfony/webpack-encore-bundle ###
 /node_modules/
