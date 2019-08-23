@@ -4,7 +4,7 @@ pipeline {
     stage('Deploy') {
       steps {
         sh 'composer install'
-        sh 'bin/console deploy prod'
+        sh 'php bin/console deploy prod'
       }
     }
   }
