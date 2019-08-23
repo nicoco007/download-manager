@@ -16,7 +16,6 @@
 
 .idea/
 /uploads/
-.htaccess
 
 ###> symfony/webpack-encore-bundle ###
 /node_modules/
