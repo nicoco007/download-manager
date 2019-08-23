@@ -3,10 +3,11 @@ pipeline {
   stages {
     stage('Deploy') {
       steps {
-        sh 'eval $(ssh-agent -s)'
-        sh 'ssh-add ~/.ssh/id_ed25519'
         sh 'composer install'
-        sh 'APP_ENV=test php bin/console deploy prod'
+
+        sshagent (credentials: ['deploy']) {
+          sh 'APP_ENV=test php bin/console deploy prod'
+        }
       }
     }
   }
