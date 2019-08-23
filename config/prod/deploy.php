@@ -11,7 +11,7 @@ return new class extends DefaultDeployer
             ->deployDir('/var/www/nicoco007.com/downloads-deploy')
             ->repositoryUrl('git@github.com:nicoco007/download-manager')
             ->repositoryBranch('master')
-            ->sharedFilesAndDirs(['var/log', 'public/.htaccess', 'config/packages/prod/doctrine.yaml'])
+            ->sharedFilesAndDirs(['var/log', 'config/packages/prod/doctrine.yaml'])
             ->composerInstallFlags('--prefer-dist --no-interaction --no-dev')
             ->remoteComposerBinaryPath('composer');
     }
