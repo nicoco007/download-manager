@@ -123,7 +123,7 @@ class ChartApiController extends AbstractController
                         [
                             'ticks' => [
                                 'beginAtZero' => true,
-                                'stepSize' => 1
+                                'precision' => 0
                             ]
                         ]
                     ]
