@@ -1,12 +1,12 @@
 {
     "devDependencies": {
         "@symfony/webpack-encore": "^0.28.0",
-        "chart.js": "^2.7.2",
+        "chart.js": "^2.8.0",
         "chartjs-plugin-colorschemes": "^0.4.0",
-        "jquery": "^3.3.1",
-        "node-sass": "^4.9.3",
-        "sass-loader": "^7.1.0",
-        "webpack-notifier": "^1.6.0"
+        "jquery": "^3.4.1",
+        "node-sass": "^4.12.0",
+        "sass-loader": "^7.3.1",
+        "webpack-notifier": "^1.8.0"
     },
     "license": "UNLICENSED",
     "private": true,
