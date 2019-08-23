@@ -23,10 +23,11 @@
         "symfony/twig-bundle": "^4.1",
         "symfony/validator": "^4.1",
         "symfony/web-link": "^4.1",
-        "symfony/webpack-encore-pack": "^1.0",
+        "symfony/webpack-encore-bundle": "^1.6",
         "symfony/yaml": "^4.1"
     },
     "require-dev": {
+        "easycorp/easy-deploy-bundle": "^1.0",
         "symfony/debug-pack": "*",
         "symfony/dotenv": "^4.1",
         "symfony/maker-bundle": "^1.0",
