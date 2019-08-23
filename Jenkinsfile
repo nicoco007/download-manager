@@ -4,7 +4,10 @@ pipeline {
     stage('Deploy') {
       steps {
         sh 'composer install'
-        sh 'php bin/console deploy prod'
+
+        sshagent (credentials: ['deploy']) {
+          sh 'APP_ENV=test php bin/console deploy prod'
+        }
       }
     }
   }
