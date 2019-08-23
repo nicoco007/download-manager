@@ -91,8 +91,7 @@ class ChartApiController extends AbstractController
         foreach ($downloads_by_file as $file_name => $days) {
             $dataset = [
                 'label' => $file_name,
-                'data' => [],
-                'fill' => false
+                'data' => []
             ];
 
             for ($i = 6; $i >= 0; $i--) {
@@ -106,6 +105,8 @@ class ChartApiController extends AbstractController
 
             $chart['data']['datasets'][] = $dataset;
         }
+
+        $chart['options']['scales']['yAxes'][0]['stacked'] = true;
 
         return new JsonResponse($chart);
     }
