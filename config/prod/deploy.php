@@ -26,5 +26,8 @@ return new class extends DefaultDeployer
 
         $this->log('Applying migrations');
         $this->runRemote('{{ console_bin }} doctrine:migrations:migrate --no-interaction');
+
+        $this->log('Warmup cache');
+        $this->runRemote('{{ console_bin }} cache:warmup');
     }
 };
