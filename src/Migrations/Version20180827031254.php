@@ -20,7 +20,7 @@ final class Version20180827031254 extends AbstractMigration
         $this->addSql('ALTER TABLE folder ADD CONSTRAINT FK_ECA209CD727ACA70 FOREIGN KEY (parent_id) REFERENCES folder (id)');
         $this->addSql('DROP TABLE file_group');
         $this->addSql('DROP INDEX IDX_F90A22BFFE54D947 ON downloadable_file');
-        $this->addSql('DROP INDEX unique_file_in_group ON downloadable_file');
+        //$this->addSql('DROP INDEX unique_file_in_group ON downloadable_file');
         $this->addSql('ALTER TABLE downloadable_file CHANGE group_id folder_id INT NOT NULL');
         $this->addSql('ALTER TABLE downloadable_file ADD CONSTRAINT FK_F90A22BF162CB942 FOREIGN KEY (folder_id) REFERENCES folder (id)');
         $this->addSql('CREATE INDEX IDX_F90A22BF162CB942 ON downloadable_file (folder_id)');
